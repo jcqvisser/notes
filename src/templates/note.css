@@ -1,0 +1,11 @@
+.frontmatter {
+  margin-bottom: 2rem;
+}
+
+.frontmatter__title {
+  margin-bottom: 0;
+}
+
+.frontmatter__date {
+  font-size: 0.8rem;
+}
