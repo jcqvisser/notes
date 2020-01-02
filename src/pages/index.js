@@ -1,29 +1,46 @@
 import React from "react"
-import { Link } from "gatsby"
+import { Link, graphql } from "gatsby"
 
 import Layout from "../components/layout"
 import SEO from "../components/seo"
 
-const IndexPage = () => (
+const IndexPage = ({ data }) => (
   <Layout>
     <SEO title="Home" />
 
     <dl>
-      <dt>Note Title</dt>
-      <dd>
-        <small><time>2020-01-01</time></small>
-        <p>Note description; a fair amount of text goes here</p>
-      </dd>
-
-      <dt>Another Note Title</dt>
-      <dd>
-        <small><time>2020-01-02</time></small>
-        <p>Note description; a fair amount of text goes here. A whole lot of text could be displayed, what then? what will we do? It will have to break at some point.</p>
-      </dd>
+      {data.allMarkdownRemark.edges.map(({ node }) => (
+        <div key={node.id}>
+          <dt>{node.frontmatter.title}</dt>
+          <dd>
+            <small>
+              <time>{node.frontmatter.date}</time>
+            </small>
+            <p>{node.excerpt}</p>
+          </dd>
+        </div>
+      ))}
     </dl>
 
     <Link to="/page-2/">Go to page 2</Link>
   </Layout>
 )
+
+export const query = graphql`
+  query {
+    allMarkdownRemark {
+      edges {
+        node {
+          id
+          frontmatter {
+            title
+            date(formatString: "YYYY-MM-DD")
+          }
+          excerpt
+        }
+      }
+    }
+  }
+`
 
 export default IndexPage
