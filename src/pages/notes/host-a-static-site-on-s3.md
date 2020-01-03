@@ -48,7 +48,9 @@ After creating the bucket, static-website-hosting needs to be enabled. This is c
 
  Enabling static-website-hosting exposes the bucket as a website via an endpoint (something like http://example.com.s3-website-eu-west-1.amazonaws.com). A name for index and error documents need to be provided so that S3 can make some educated guesses, like serving http://endpoint/pages/intro/index.html when http://endpoint/pages/intro/ is requested.
 
-While you’re busy with the S3 interface, upload a placeholder `index.html` file and prevent anyone from caching it by setting it’s `Cache-Control` header to `no-store`. This will be useful for seeing if everything works.
+While you’re busy with the S3 interface, upload a placeholder `index.html` file.
+Grant public read access to the file, else it won't be available to users who request it.
+Prevent anyone from caching the file by setting it’s `Cache-Control` header to `no-store`. This will be useful for seeing if everything works.
 
 ## Create a CloudFront Distribution
 Head over to the CloudFront page and create a new  web distribution:
