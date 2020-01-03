@@ -4,6 +4,19 @@ h1 {
   @apply text-4xl text-gray-900;
 }
 
+h2 {
+  @apply text-xl text-gray-900 mb-4;
+}
+
+a {
+  @apply underline px-1 py-1 rounded;
+  @apply mb-4
+}
+
+a:hover {
+  @apply bg-gray-200
+}
+
 p {
   @apply text-sm mb-4;
 }
@@ -25,11 +38,11 @@ time {
 }
 
 ul, ol {
-  @apply text-sm list-inside list-disc;
+  @apply text-sm list-outside list-disc mb-4 ml-6;
 }
 
 ul > li {
-
+  @apply pb-1
 }
 
 @tailwind components;

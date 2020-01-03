@@ -13,7 +13,7 @@ export default ({ data }) => {
       <div>
         <Link
           to={post.fields.slug}
-          className="border-solid border-l-4 block px-4 rounded-sm border-gray-300 hover:border-gray-600 mb-6"
+          className="border-solid border-l-4 block px-4 rounded-sm border-gray-300 hover:border-gray-600 mb-6 hover:bg-transparent no-underline"
         >
           <h1>{post.frontmatter.title}</h1>
           <time className="text-gray-700 block">{post.frontmatter.date}</time>
