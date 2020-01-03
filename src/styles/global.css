@@ -1,7 +1,5 @@
 @tailwind base;
-
 @tailwind components;
-
 @tailwind utilities;
 
 
@@ -10,7 +8,7 @@ h1 {
 }
 
 h2 {
-  @apply text-xl text-gray-900 mb-4;
+  @apply text-2xl text-gray-900 mb-4;
 }
 
 a {

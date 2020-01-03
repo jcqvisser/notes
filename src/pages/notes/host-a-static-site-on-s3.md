@@ -19,7 +19,7 @@ Buying a domain somewhere else is also viable, setting up the DNS settings for i
 
 For the rest of this, let’s pretend the domain is `example.com`.
 
-## Get an SSL certificate from ACM
+## Get an SSL Certificate from ACM
 Get to the AWS Certificate Manager by clicking on the “Services” dropdown and searching for “certificate”.
 
 Click on “Get Started” under the “Provision Certificates” header and then request a public certificate.
@@ -62,7 +62,7 @@ Head over to the CloudFront page and create a new  web distribution:
 
 Take note of the domain name for the newly created CloudFront distribution (it looks something like `xxxxxxxxxxxxxx.cloudfront.net`) if everything worked up until now you’ll be able to access the placeholder `index.html`
 
-## Update DNS records to point to CloudFront
+## Update DNS Records to Point to CloudFront
 If your DNS is managed by Route53, then head over there and select the hosted-zone for your domain.
 - Create an A record with a blank name (this maps to  `example.com`), select _Yes_ for _Alias_ and select your CloudFront distribution as the _Alias Target_
 - Create an A record with “www” under the name field (this maps to `www.example.com`) that is also aliased to the CloudFront distribution.
