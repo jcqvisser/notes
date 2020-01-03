@@ -5,11 +5,12 @@ import './note.css'
 
 export default ({ data }) => {
   const post = data.markdownRemark
+
   return (
     <Layout>
-      <div className="frontmatter">
-        <h1 className="frontmatter__title">{post.frontmatter.title}</h1>
-        <time className="frontmatter__date">{post.frontmatter.date}</time>
+      <div>
+        <h1>{post.frontmatter.title}</h1>
+        <time>{post.frontmatter.date}</time>
       </div>
 
       <div dangerouslySetInnerHTML={{__html: post.html}}></div>
