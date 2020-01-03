@@ -1,5 +1,10 @@
 @tailwind base;
 
+@tailwind components;
+
+@tailwind utilities;
+
+
 h1 {
   @apply text-4xl text-gray-900;
 }
@@ -44,7 +49,3 @@ ul, ol {
 ul > li {
   @apply pb-1
 }
-
-@tailwind components;
-
-@tailwind utilities;
