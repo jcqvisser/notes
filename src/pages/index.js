@@ -8,22 +8,22 @@ const IndexPage = ({ data }) => (
   <Layout>
     <SEO title="Home" />
 
-    <dl>
+    <ul>
       {data.allMarkdownRemark.edges.map(({ node }) => (
-        <Link to={node.fields.slug} key={node.id} className="border-solid border-l-4 block px-4 rounded-sm border-gray-300 hover:border-gray-600">
-          <dt>
-            <h1>{node.frontmatter.title}</h1>
-          </dt>
-
-          <dd>
-            <small>
-              <time className="text-gray-600">{node.frontmatter.date}</time>
-            </small>
-            <p>{node.excerpt}</p>
-          </dd>
-        </Link>
+        <li key={node.fields.slug} className="list-none">
+          <div>
+            <Link
+              to={node.fields.slug}
+              className="border-solid border-l-4 block px-4 rounded-sm border-gray-300 hover:border-gray-600"
+            >
+              <h1>{node.frontmatter.title}</h1>
+              <time className="text-gray-700 block">{node.frontmatter.date}</time>
+              <p>{node.excerpt}</p>
+            </Link>
+          </div>
+        </li>
       ))}
-    </dl>
+    </ul>
   </Layout>
 )
 
