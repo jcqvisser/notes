@@ -11,6 +11,10 @@ h2 {
   @apply text-2xl text-gray-900 mb-4;
 }
 
+h3 {
+  @apply text-lg text-gray-900 mb-4;
+}
+
 a {
   @apply underline px-1 py-1 rounded;
   @apply mb-4
