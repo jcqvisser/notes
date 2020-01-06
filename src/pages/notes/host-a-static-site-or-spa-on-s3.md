@@ -48,7 +48,7 @@ Public-Access needs to be un-blocked. This can be done during Step 3 of the buck
 
 After creating the bucket, static-website-hosting needs to be enabled. This is configured by selecting the bucket on the S3 console, navigating to the “Properties” tab and selecting “Static website hosting”
 
-Finally, make sure than anyone can read any file from the bucket: Update the bucket-policy to the following:
+Make sure than anyone can read any file from the bucket: Update the bucket-policy to the following:
 ```json
 {
   "Version": "2008-10-17",
