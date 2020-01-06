@@ -1,0 +1,19 @@
+version: v1.0
+name: Deploy Jcqvisser.com
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+blocks:
+  - name: Deploy
+    task:
+      secrets:
+        - name: aws-jcqvisser
+      jobs:
+        - name: Copy to S3
+          commands:
+            - checkout
+            - cache restore website-build
+            - aws s3 cp "public" "s3://jcqvisser.com" --recursive --acl "bucket-owner-full-control" --cache-control no-store
+            - aws cloudfront create-invalidation --distribution-id EQWZR09YIP28A --paths "/*"
+            - cache delete website-build
