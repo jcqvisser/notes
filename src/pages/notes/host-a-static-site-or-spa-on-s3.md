@@ -123,3 +123,7 @@ The first time someone requests a certain page on the website, that request will
 When deploying a new version of the website, it is wise to create an Invalidation on CloudFront. This tells it to ditch it's cache of the old files, preventing it from serving an out-dated website.
 
 Create an Invalidation by selecting the Distribution for the website on the CloudFront console (https://console.aws.amazon.com/cloudfront/home), selecting the _Invalidations_ tab, and creating an invalidation for all object paths (`/*`).
+
+## Automated Deployment
+
+When this is all set up, deployment of the site can be automated with any number of CI tools. See [this note](/notes/set-up-semaphore-to-deploy-a-static-site-or-spa-to-s3/) on how to do it with Semapohore.

@@ -1,15 +1,15 @@
 ---
-title: "Set up Semaphore to Deploy a Static Site to S3"
+title: "Set up Semaphore to Deploy a Static Site or SPA to S3"
 date: "2020-01-06"
 ---
 
-Somewhat of a follow up to [a previous note](notes/host-a-static-site-or-spa-on-s3/) that describes how to host a static-site on S3
-
-## Overview
+This is a follow up to [a previous note](/notes/host-a-static-site-or-spa-on-s3/) that describes how to host a static-site on S3. Here we automate the deployment. &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp
 
 Before starting this, make sure you have:
-* a Semaphore account, linked to your Github account
+* A Semaphore account, linked to your Github account
 * A public Github repo with some static-website or single-page-app
+
+## Overview
 
 - Set up static site hosting via S3 and CloudFront, as detailled here: [Host a Static Site on S3](bear://x-callback-url/open-note?id=74899200-30C5-4D63-B85C-439EC47210FD-1281-000003B5DD6DF602)
 The steps to set up deployment:
@@ -221,3 +221,5 @@ blocks:
             - aws cloudfront create-invalidation --distribution-id <distribution-id> --paths "/*"
             - cache delete website-build
 ```
+
+Now pushing to the `master` branch on Github will trigger Semaphore to build the site and upload the result to S3.
