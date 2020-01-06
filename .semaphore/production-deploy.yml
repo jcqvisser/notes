@@ -14,6 +14,6 @@ blocks:
           commands:
             - checkout
             - cache restore website-build
-            - aws s3 cp "public" "s3://jcqvisser.com" --recursive --acl "bucket-owner-full-control" --acl "public-read" --cache-control no-store
+            - aws s3 cp "public" "s3://jcqvisser.com" --recursive --acl "bucket-owner-full-control" --cache-control no-store
             - aws cloudfront create-invalidation --distribution-id EQWZR09YIP28A --paths "/*"
             - cache delete website-build

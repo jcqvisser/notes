@@ -1,6 +1,6 @@
 ---
 title: "Host a Static Site or SPA on S3"
-date: "2017-08-10"
+date: "2020-01-04"
 ---
 
 Static sites and SPA's can be hosted cheaply using only AWS services. Many tutorials make this out to be more complicated than it is.
@@ -47,6 +47,27 @@ Navigate to S3 and create a bucket. S3 bucket names need to be globally unique, 
 Public-Access needs to be un-blocked. This can be done during Step 3 of the bucket-creation-wizard by unchecking “Block _all_ public access”
 
 After creating the bucket, static-website-hosting needs to be enabled. This is configured by selecting the bucket on the S3 console, navigating to the “Properties” tab and selecting “Static website hosting”
+
+Finally, make sure than anyone can read any file from the bucket: Update the bucket-policy to the following:
+```json
+{
+  "Version": "2008-10-17",
+  "Id": "Public!!!",
+  "Statement": [
+    {
+      "Sid": "2",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": [
+        "s3:GetObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::<bucket-name>/*"
+      ]
+    }
+  ]
+}
+```
 
 Enabling static-website-hosting exposes the bucket as a website via an endpoint (something like http://example.com.s3-website-eu-west-1.amazonaws.com). A name for index and error documents need to be provided so that S3 can make some educated guesses, like serving http://endpoint/pages/intro/index.html when http://endpoint/pages/intro/ is requested.
 
