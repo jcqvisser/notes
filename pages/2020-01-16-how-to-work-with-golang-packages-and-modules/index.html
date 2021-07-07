@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>How to Work with Golang Packages and Modules</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body>
+    <p>I haven't used Go often enough to ever remember how to deal with packages and modules. Hopefully writing it down helps:                  </p>
+    <p>The files in a folder make up one package, they should all have the same package declaration at the top: <code>package main</code>. The root package is always called <code>"main"</code>.</p>
+    <p>Files in a package can access everything declared in that same package without having to <code>import</code> it.</p>
+    <p>Initializing a project as a module makes importing things from nested packages easy. Do so with <code>go mod init modulename</code> where <code>modulename</code> is the url of the repo where the module is hosted, eg. <code>github.com/username/module</code>.</p>
+    <p>Folders inside the module represent other packages. These can be imported by their absolute name, eg. <code>import (p "modulename/packagename"</code></p>
+    <p>Packages can be nested: The code in a file at <code>modulename/packagename/nestedpackagename/some_file.go</code> with its first line as <code>package nestedpackagename</code> can be accessed via <code>import(np "modulename/packagename/nestedpackagename")</code></p>
+    <p>Things inside a package with names that start with a capital letter can be accessed from outside the package. For example, if the following file exists as <code>modulename/packagename/constants.go</code>:</p>
+    <pre><code class="language-go">package packagename
+
+Pi := 3.1416
+e := 2.7183
+</code></pre>
+    <p>Then the following can be done in <code>main.go</code>:</p>
+    <pre><code class="language-go">package main
+
+import(
+  "fmt"
+  np "github.com/username/module/packagename/nestedpackagename"
+)
+
+// works:
+fmt.Println(np.Pi)
+
+// does not work:
+// fmt.Println(np.e)
+</code></pre>
+    <p>Packages are stateful. If a global variable in a package is changed somewhere, it will appear changed <em>everywhere</em> in the app. Global mutable state is bad.</p>
+    <p>In summary:</p>
+    <ul>
+      <li>Initialize a project as a module: <code>go mod init &#x3C;module-name></code></li>
+      <li>Files in one package don’t need to import one another</li>
+      <li>Packages can contain packages</li>
+      <li>Import packages using their fully qualified name: <code>import (p "modulename>/packagename"</code></li>
+      <li>Avoid global variables</li>
+    </ul>
+  </body>
+</html>

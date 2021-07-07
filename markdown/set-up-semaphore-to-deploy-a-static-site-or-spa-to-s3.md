@@ -1,5 +1,5 @@
 ---
-title: "Set up Semaphore to Deploy a Static Site or SPA to S3"
+title: 'Set up Semaphore to Deploy a Static Site or SPA to S3'
 date: "2020-01-06"
 ---
 
