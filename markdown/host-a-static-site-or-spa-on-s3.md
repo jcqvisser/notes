@@ -126,4 +126,4 @@ Create an Invalidation by selecting the Distribution for the website on the Clou
 
 ## Automated Deployment
 
-When this is all set up, deployment of the site can be automated with any number of CI tools. See [this note](/notes/set-up-semaphore-to-deploy-a-static-site-or-spa-to-s3/) on how to do it with Semapohore.
+When this is all set up, deployment of the site can be automated with any number of CI tools. See [this note](../2020-01-06-set-up-semaphore-to-deploy-a-static-site-or-spa-to-s3/index.html) on how to do it with Semapohore.

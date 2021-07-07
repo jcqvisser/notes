@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Host a Static Site or SPA on S3</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body>
+    <p>Static sites and SPA's can be hosted cheaply using only AWS services. Many tutorials make this out to be more complicated than it is.</p>
+    <h2>Overview</h2>
+    <p>Its good to have some static website or SPA available to deploy before starting this process, even if its just a simple hello-world example. This has been tested with <a href="https://www.gatsbyjs.org/tutorial/part-one/">Gatsby</a>, <a href="https://reactjs.org/docs/create-a-new-react-app.html#create-react-app">Create React App</a> and <a href="https://angular.io/start">Angular</a> but anything that produces a bunch of files that could constitute a website should work.</p>
+    <ul>
+      <li>Buy a domain from Route53 (<strong>optional</strong>)</li>
+      <li>Get an SSL certificate from ACM (<strong>optional</strong>)</li>
+      <li>Create an S3 bucket to hold the files and enable static-website hosting</li>
+      <li>Create a CloudFront distribution that points to the bucket's domain</li>
+      <li>Update DNS records to point to CloudFront (<strong>optional</strong>)</li>
+      <li>Deploy the static website</li>
+    </ul>
+    <h2>Buy a Domain from Route53 (Optional)</h2>
+    <p>Buying a domain is not required, skip to <a href="#create-a-bucket">Create an S3 Bucket to Hold the Files</a> if you don't want to spend money.</p>
+    <p>The Route53 interface at https://console.aws.amazon.com/route53/home is fairly self-explanatory. Buying a domain is pretty straight-forward.</p>
+    <p>Buying a domain somewhere else is also viable, setting up the DNS settings and obtaining an SSL certificate for it will just be more of a shlep.</p>
+    <p>For the rest of this, let’s pretend the domain is <code>example.com</code>.</p>
+    <h2>Get an SSL Certificate from ACM (Optional)</h2>
+    <p>An SSL certificate isn't required unless the website is to be hosted on a specific domain. CloudFront provides certificates that can be used otherwise.</p>
+    <p>A free SSL certificate for a specific domain can be obtained from the AWS Certificate Manager at https://console.aws.amazon.com/acm/home?region=eu-west-1#/</p>
+    <p>There are some things to keep in mind while requesting a certificate:</p>
+    <p>Request a certificate for both the apex domain as well as the wildcard sub-domain:</p>
+    <ul>
+      <li><code>*.example.com</code></li>
+      <li><code>example.com</code></li>
+    </ul>
+    <p>AWS needs to validate that you own the domain that you're requesting a certificate for. This is most easily done via DNS validation, where AWS asks you to create CNAME DNS-records for the domain that they then go and check. After completing the certificate-request wizard you’ll have access to this DNS configuration.</p>
+    <p>If the domain's DNS is managed with Route53 then the next step is a breeze: click on the dropdown next to each of your domain names and select “Create a record in Route 53”.</p>
+    <p>If the domain's DNS is managed wlsewhere you’ll have to create the CNAME DNS records that AWS asks for manually.</p>
+    <p>Public-Access needs to be un-blocked. This can be done during Step 3 of the bucket-creation-wizard by unchecking “Block <em>all</em> public access”</p>
+    <p>After creating the bucket, static-website-hosting needs to be enabled. This is configured by selecting the bucket on the S3 console, navigating to the “Properties” tab and selecting “Static website hosting”</p>
+    <p>Make sure than anyone can read any file from the bucket: Update the bucket-policy to the following:</p>
+    <pre><code class="language-json">{
+  "Version": "2008-10-17",
+  "Id": "Public!!!",
+  "Statement": [
+    {
+      "Sid": "2",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": [
+        "s3:GetObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::&#x3C;bucket-name>/*"
+      ]
+    }
+  ]
+}
+</code></pre>
+    <p>Enabling static-website-hosting exposes the bucket as a website via an endpoint (something like http://example.com.s3-website-eu-west-1.amazonaws.com). A name for index and error documents need to be provided so that S3 can make some educated guesses, like serving http://endpoint/pages/intro/index.html when http://endpoint/pages/intro/ is requested.</p>
+    <p>When serving a SPA from an S3 bucket, it could be advantageous to use <code>index.html</code> as the error document. That way the SPA itself can choose what do display, given the URL.</p>
+    <p>
+      While you’re busy with the S3 interface, upload a placeholder <code>index.html</code> file.
+      Grant public read access to the file, else it won't be available to users who request it.
+      Prevent anyone from caching the file by setting it’s <code>Cache-Control</code> header to <code>no-store</code>. This will be useful for seeing if everything works.
+    </p>
+    <h2>Create a CloudFront Distribution</h2>
+    <p>Head over to the CloudFront page and create a new web distribution:</p>
+    <ul>
+      <li>Use the endpoint for the static website created using S3 from before as the <em>Origin Domain Name</em>, rather than selecting the S3 bucket from the dropdown. This allows CloudFront to benefit from S3's guesses about which files to serve for url’s that don’t directly reference files.</li>
+      <li>Select <em>Redirect HTTP to HTTPS</em> for <em>Viewer Protocol Policy</em></li>
+      <li>Select <em>Yes</em> for <em>Compress Objects Automatically</em></li>
+      <li>List all the domain names you want to access this website on under <em>Alternate Domain Names</em> (eg. <code>example.com,www.example.com</code>) (Don't list any if you're not using a specific domain)</li>
+      <li>Select _Custom SSL Certificate _ for <em>SSL Certificate</em> and select the certificate that was provisioned from ACM. Select <em>Default CloudFront Certificate</em> if you're not using a specific domain)</li>
+      <li>Set the <em>Default Root Object</em> to <code>index.html</code></li>
+      <li>Click <em>Create Distribution</em> and wait 20 min</li>
+    </ul>
+    <p>Take note of the domain name for the newly created CloudFront distribution (it looks something like <code>xxxxxxxxxxxxxx.cloudfront.net</code>) if everything worked up until now you’ll be able to access the placeholder <code>index.html</code></p>
+    <h2>Update DNS Records to Point to CloudFront (Optional)</h2>
+    <p>Don't do this unless you're hosting this site on a specific domain.</p>
+    <p>If your DNS is managed by Route53, then head over there and select the hosted-zone for your domain.</p>
+    <ul>
+      <li>Create an A record with a blank name (this maps to <code>example.com</code>), select <em>Yes</em> for <em>Alias</em> and select your CloudFront distribution as the <em>Alias Target</em></li>
+      <li>Create an A record with “www” under the name field (this maps to <code>www.example.com</code>) that is also aliased to the CloudFront distribution.</li>
+    </ul>
+    <p>If your DNS isn’t managed by Route53 then you’ll probably have to create a CNAME record that points to the url of the CloudFront distribution.</p>
+    <p>DNS takes some time to propagate, but after a while (5 min to a few hours) you’ll be able to access the placeholder <code>index.html</code> page via the new domain.</p>
+    <h2>Deploy the Static Website</h2>
+    <p>The placeholder <code>index.html</code> page uploaded to S3 earlier can be replaced by a <em>real</em> static website or SPA.</p>
+    <h3>Build and Upload the Static Website</h3>
+    <ul>
+      <li>If the website is built with <em>Gatsby</em>, first run <code>gatsby build</code> in the terminal. When the website is built, upload all the files in the <code>public</code> directory to the root of the S3 bucket. (Also see: https://www.gatsbyjs.org/tutorial/part-eight/#-create-a-production-build)</li>
+      <li>If the SPA is built with <em>Create React App</em>, run <code>npm run build</code> in the terminal and upload all the files in the <code>build</code> directory to the root of the S3 bucket. (Also see: https://create-react-app.dev/docs/production-build/)</li>
+      <li>For Angular Apps, run <code>ng build --prod</code> and upload the contents of the <code>dist</code> folder to the root of the S3 bucket. (Also see: https://angular.io/guide/deployment#basic-deployment-to-a-remote-server)</li>
+    </ul>
+    <h3>Configure Caching</h3>
+    <p>
+      Caching strategies for the files need to be set on S3.
+      Caching is complicated, so prefer to do no caching by setting the <code>Cache-Control</code> header of all the files to <code>no-store</code> when uploading them manually.
+    </p>
+    <p>When automating the deployment, consider caching files with a fingerprint in their filename aggressively and prevent caching of files without a fingerprint.</p>
+    <h3>Configure Permissions</h3>
+    <p>Remember to allow public-read access to all the files, else the website will only consist of 405 error pages.</p>
+    <h3>Create a Cloudfront Invalidation</h3>
+    <p>The first time someone requests a certain page on the website, that request will end up at CloudFront because of the DNS records created earlier. CloudFront will forward the request to the S3 static-website. The response from S3 will be cached by CloudFront, allowing it to respond directly to future requests.</p>
+    <p>When deploying a new version of the website, it is wise to create an Invalidation on CloudFront. This tells it to ditch it's cache of the old files, preventing it from serving an out-dated website.</p>
+    <p>Create an Invalidation by selecting the Distribution for the website on the CloudFront console (https://console.aws.amazon.com/cloudfront/home), selecting the <em>Invalidations</em> tab, and creating an invalidation for all object paths (<code>/*</code>).</p>
+    <h2>Automated Deployment</h2>
+    <p>When this is all set up, deployment of the site can be automated with any number of CI tools. See <a href="../2020-01-06-set-up-semaphore-to-deploy-a-static-site-or-spa-to-s3/index.html">this note</a> on how to do it with Semapohore.</p>
+  </body>
+</html>

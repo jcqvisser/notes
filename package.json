@@ -1,0 +1,39 @@
+{
+  "name": "notes",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-markdown-pages": "node ./scripts/build-markdown-pages.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jcqvisser/notes.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jcqvisser/notes/issues"
+  },
+  "homepage": "https://github.com/jcqvisser/notes#readme",
+  "dependencies": {
+    "rehype-document": "^5.1.0",
+    "rehype-format": "^3.1.0",
+    "rehype-stringify": "^8.0.0",
+    "remark": "^13.0.0",
+    "remark-extract-frontmatter": "^3.1.0",
+    "remark-frontmatter": "^3.0.0",
+    "remark-html": "^13.0.1",
+    "remark-parse": "^9.0.0",
+    "remark-preset-lint-recommended": "^5.0.0",
+    "remark-rehype": "^8.1.0",
+    "remark-stringify": "^9.0.1",
+    "to-vfile": "^7.1.0",
+    "unified": "^9.2.1",
+    "unist-util-filter": "^3.0.0",
+    "vfile-reporter": "^7.0.1",
+    "yaml": "^1.10.2"
+  }
+}

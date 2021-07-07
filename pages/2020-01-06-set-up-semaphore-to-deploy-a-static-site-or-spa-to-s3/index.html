@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Set up Semaphore to Deploy a Static Site or SPA to S3</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body>
+    <p>This is a follow up to <a href="/notes/host-a-static-site-or-spa-on-s3/">a previous note</a> that describes how to host a static-site on S3. Here we automate the deployment. &#x26;nbsp &#x26;nbsp &#x26;nbsp &#x26;nbsp &#x26;nbsp &#x26;nbsp &#x26;nbsp &#x26;nbsp</p>
+    <p>Before starting this, make sure you have:</p>
+    <ul>
+      <li>A Semaphore account, linked to your Github account</li>
+      <li>A public Github repo with some static-website or single-page-app</li>
+    </ul>
+    <h2>Overview</h2>
+    <p>The Steps:</p>
+    <ul>
+      <li>Set up static site hosting via S3 and CloudFront, as detailled here: <a href="bear://x-callback-url/open-note?id=74899200-30C5-4D63-B85C-439EC47210FD-1281-000003B5DD6DF602">Host a Static Site on S3</a></li>
+      <li>Create an IAM user for Semaphore with permissions to upload files to an S3 bucket and invalidate a CloudFront cache.</li>
+      <li>Install and Configure the AWS CLI locally</li>
+      <li>Install the Semaphore CLI</li>
+      <li>Initialise the project using the Semaphore CLI</li>
+      <li>Create Semaphore pipelines.</li>
+    </ul>
+    <h2>Create an IAM user for Semaphore</h2>
+    <p><em>Users</em> are part of <em>groups</em>. <em>Groups</em> have <em>policies</em>. <em>Policies</em> contain <em>permissions</em>.</p>
+    <h3>Create appropriate Policies</h3>
+    <ul>
+      <li>Using the AWS Management Console, navigate to the <a href="https://console.aws.amazon.com/iam">IAM service</a></li>
+      <li>Select <em>Policies</em> in the left-hand nav and choose <em>Create policy</em></li>
+    </ul>
+    <p>Allowing Semaphore to deploy a static site to AWS will require two policies; one to upload files to S3 and another to invalidate the CloudFront cache once those files have been uploaded.</p>
+    <h4>Policy 1: Allow Upload to S3</h4>
+    <p>This policy allows users to upload files to a specific bucket as long as the bucket owner retains full control of the files.</p>
+    <ul>
+      <li>After selecting <em>Create policy</em> from the IAM Policies page:</li>
+      <li>Set up a policy for the <em>S3</em> service which:
+        <ul>
+          <li>Allows the <em>PutObject</em> and <em>PutObjectAcl</em> actions. This gives the user permission to upload files to an S3 bucket and choose who has access to those files via an ACL - Access Control List.</li>
+          <li>Limits the buckets to which the user may upload files (<code>arn:aws:s3:::&#x3C;bucket_name>/*</code>)</li>
+          <li>Ensures the bucket owner has full control of what the user uploads (<code>"StringEquals": { "s3:x-amz-acl": “bucket-owner-full-control" }</code>)</li>
+        </ul>
+      </li>
+      <li>Give this policy an easily identifiable name. Consider something like <code>semaphore-&#x3C;project-name>-s3-upload</code></li>
+    </ul>
+    <p>The JSON for this policy looks like this:</p>
+    <pre><code class="language-json">{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "0",
+      "Effect": "Allow",
+        "Action": [
+          "s3:PutObject",
+          "s3:PutObjectAcl"
+        ],
+        "Resource": "arn:aws:s3::&#x3C;bucket-name>/*”,
+        "Condition": {
+        "StringEquals": {
+          "s3:x-amz-acl": "bucket-owner-full-control"
+        }
+      }
+    }
+  ]
+}
+</code></pre>
+    <h4>Policy 2: Allow CloudFront Cache Invalidation</h4>
+    <p>CloudFront caches objects from S3 for a while, in order for deploys to have a more rapid effect the CloudFront cache needs to be invalidated. This policy allows users to create an <em>Invalidation</em>.</p>
+    <ul>
+      <li>After selecting <em>Create policy</em> from the IAM Policies page:</li>
+      <li>Set up a policy for the <em>CloudFront</em> service which:
+        <ul>
+          <li>Allows the <em>CreateInvalidation</em> action.</li>
+          <li>Governs the right CloudFront distribution (identified by <em>ARN</em> and <em>Account ID</em>, this can be found from the CloudFront Dashboard for the distribution, it looks like this: <code>arn:aws:cloudfront::&#x3C;account-id>:distribution/&#x3C;distribution-id></code>)</li>
+        </ul>
+      </li>
+      <li>Give this policy an easily identifiable name. Consider something like <code>semaphore-&#x3C;project-name>-cloudfront-invalidation</code></li>
+    </ul>
+    <p>The JSON for this policy looks like:</p>
+    <pre><code class="language-JSON">{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "0",
+      "Effect": "Allow",
+      "Action": "cloudfront:CreateInvalidation",
+      "Resource": "arn:aws:cloudfront::&#x3C;account-id>:distribution/&#x3C;distribution-id>”
+    }
+  ]
+}
+</code></pre>
+    <h3>Attach the New Policies to a New Group</h3>
+    <p>In order for an IAM user to have the new policies applied to them, they need to be part of a group with these policies attached.</p>
+    <ul>
+      <li>Navigate to the IAM Groups page via the left-hand nav of the <a href="https://console.aws.amazon.com/iam">IAM Management Console</a> and select <em>Create New Group</em></li>
+      <li>Give this group a memorable name that links it to the project, consider something like <code>semaphore-&#x3C;project-name></code></li>
+      <li>Attach the s3-upload and cloudfront-invalidation policies to the group</li>
+    </ul>
+    <h3>Create a New User</h3>
+    <p>Semaphore needs to be represented by a user for it to make changes to resources. The permissions included in the policies that are associated to the groups that this user is part of govern the actions that the user can take.</p>
+    <ul>
+      <li>Select users in the left-hand nav of the <a href="https://console.aws.amazon.com/iam">IAM Management Console</a></li>
+      <li>Using the blue <em>Add User</em> button follow the wizard to create a new user.
+        <ul>
+          <li>Use a name that indicates the user’s purpose and project, consider something like <code>semaphore-&#x3C;project-name></code></li>
+          <li>Grant the user programmatic access , but not AWS Management Console access</li>
+          <li>Add the User to the Group created before</li>
+        </ul>
+      </li>
+      <li>Add appropriate tags to the user. This helps to make billing more understandable.</li>
+    </ul>
+    <p>After the user has been created, AWS will display its <em>Access key ID</em> and <em>Secret access key</em>. Take note of these, they need to be provided to the AWS CLI.</p>
+    <h2>Install and Configure the AWS CLI Locally</h2>
+    <p>Semaphore’s AWS CLI is the same as the one you can install locally. This CLI saves it’s configuration and credentials as files located at: <code>~/.aws/config</code> and <code>~/.aws/credentials</code></p>
+    <p>Install the AWS CLI using <code>pip3 install awscli</code> and configure it with <code>aws configure</code>.</p>
+    <p>The configuration asks for the following:</p>
+    <ul>
+      <li>AWS Access Key ID</li>
+      <li>AWS Secret Access Key</li>
+      <li>Default region name</li>
+      <li>Default output format</li>
+    </ul>
+    <p>Use the Access Key ID and Secret Access Key generated for the Semaphore user before.</p>
+    <p>The possible default region names can be found here: <a href="https://docs.aws.amazon.com/general/latest/gr/rande.html">AWS Service Endpoints - AWS General Reference</a> If you’re outside of the US, consider going for <code>eu-west-1</code>.</p>
+    <p>Just set the default output format to <code>json</code>.</p>
+    <h2>Install the Semaphore CLI</h2>
+    <p>Follow the guide here: <a href="https://docs.semaphoreci.com/article/53-sem-reference#download-and-install">sem command line tool - Semaphore 2.0 Documentation</a></p>
+    <p>TLDR:</p>
+    <ul>
+      <li>install the cli with: <code>curl https://storage.googleapis.com/sem-cli-releases/get.sh | bash</code></li>
+      <li>log in with: <code>sem connect &#x3C;organisation-name>.semaphoreci.com &#x3C;api-token></code>
+        <ul>
+          <li>The API token can be found under your personal account settings in the top-left menu on semaphore.</li>
+          <li>The top-left menu also indicates the organisation name</li>
+        </ul>
+      </li>
+    </ul>
+    <h2>Initialise the Project Using the Semaphore CLI</h2>
+    <p>Inside the locally cloned Github Git repo, do <code>sem init</code> (make sure the github repo is public)</p>
+    <p>Provide the AWS configuration and credentials to Semaphore with:</p>
+    <pre><code class="language-bash">sem create secret &#x3C;secret-name> \
+  --file ~/.aws/config:/home/semaphore/.aws/config \
+  --file ~/.aws/credentials:/home/semaphore/.aws/credentials
+</code></pre>
+    <h2>Create the Semaphore Pipeline Files</h2>
+    <p>Create two Semaphore pipelines, one for building branches, and one for deploying the website to production.</p>
+    <h3>Build Pipeline</h3>
+    <p>The first pipeline is set up in <code>.semaphore/semaphore.yml</code>, it:</p>
+    <ul>
+      <li>checks out the repo and installs packages from NPM (caching them, so it’s faster next time)</li>
+      <li>builds the website and caches the result</li>
+      <li>triggers the next pipeline, if the checked out branch is <code>master</code></li>
+    </ul>
+    <pre><code class="language-yaml"># .semaphore/semaphore.yml
+
+version: v1.0
+name: Build &#x3C;website name>
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+
+blocks:
+  - name: “Install dependencies”
+    task:
+      jobs:
+        - name: npm install
+          commands:
+            - checkout
+            # Reuse dependencies from cache and avoid installing them from scratch:
+            - cache restore
+            - npm install
+            - cache store
+
+  - name: “Build site”
+    task:
+      jobs:
+        - name: Build
+          commands:
+            - checkout
+            - cache restore
+            # Replace this with command(s) that build your website:
+            - npx gatsby build
+            # The script puts website files in directory `public`,
+            # store it in cache to propagate to deployment:
+            - cache store website-build public
+
+promotions:
+  - name: Production Deploy
+    pipeline_file: production-deploy.yml
+    auto_promote_on:
+      - result: passed
+        branch:
+          - master
+</code></pre>
+    <h3>Deploy Pipeline</h3>
+    <p>The deploy-pipeline is referenced in the build-pipeline file as <code>production-deploy.yml</code>, it:</p>
+    <ul>
+      <li>checks out the cached build from the build-pipeline</li>
+      <li>uploads the files that constitute the website to the right S3 Bucket</li>
+      <li>creates an invalidation on CloudFront, allowing it to serve the new website.</li>
+    </ul>
+    <pre><code class="language-yaml"># .semaphore/production-deploy.yml
+
+version: v1.0
+name: Deploy &#x3C;Website Name>
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+blocks:
+  - name: Deploy
+    task:
+      secrets:
+        - name: &#x3C;secret-name>
+      jobs:
+        - name: Copy to S3
+          commands:
+            - checkout
+            - cache restore website-build
+            - aws s3 cp public "s3://&#x3C;bucket-name>" --recursive --acl bucket-owner-full-control --cache-control no-store
+            - aws cloudfront create-invalidation --distribution-id &#x3C;distribution-id> --paths "/*"
+            - cache delete website-build
+</code></pre>
+    <p>Now pushing to the <code>master</code> branch on Github will trigger Semaphore to build the site and upload the result to S3.</p>
+  </body>
+</html>
